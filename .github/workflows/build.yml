@@ -17,30 +17,30 @@ jobs:
     outputs:
       version: ${{ steps.gitversion.outputs.semVer }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.6
+      uses: gittools/actions/gitversion/setup@v3.0.0
       with:
         versionSpec: 5.x
     - id: gitversion
       name: Use GitVersion
-      uses: gittools/actions/gitversion/execute@v0.9.6
+      uses: gittools/actions/gitversion/execute@v3.0.0
       with:
         useConfigFile: true
         configFilePath: ./gitversion.yml
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: benmmclean/openscad-build-action@v1
+    - uses: emilymclean/openscad-build-action@v1
       with:
         input-file: headphone_mount.scad
         output-file: headphone_mount.stl
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v4
       with:
         name: model-stl
         path: ./headphone_mount.stl
@@ -54,9 +54,13 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Create tag for release
+      uses: rickstaa/action-create-tag@v1
+      with:
+        tag: v${{ needs.version.outputs.version }}
     - id: create_release
       name: Create Release
       uses: softprops/action-gh-release@v2
@@ -64,7 +68,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: v${{ needs.version.outputs.version }}
         name: Release ${{ needs.version.outputs.version }}
-        target_commitish: ${{ github.sha }}
         draft: false
         prerelease: ${{ github.ref != 'refs/heads/main' }}
   publish-to-release:
@@ -73,14 +76,14 @@ jobs:
     - build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v4
       with:
         name: model-stl
         path: ./
     - name: Upload Artifact to Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      uses: actions/upload-release-asset@v1
+      uses: shogo82148/actions-upload-release-asset@v1
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: ./headphone_mount.stl
